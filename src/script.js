@@ -132,7 +132,7 @@ function press (letter) {
             party.currentPressedIndex = 0
             party.currentStringIndex++
         }
-    }  else if ( party.errors.includes(mustLetter)) {
+    }  else if ( !party.errors.includes(mustLetter)) {
         party.errors.push(mustLetter)
     }
 
@@ -207,7 +207,6 @@ function viewUpdate () {
             })
         )  // Перевратим строки в масив символа
     }
-    console.log(showedStrings)
     // Оставляем всю оставшия строчка как она есть
     textExample.innerHTML = ''
     textExample.append(div)
