@@ -3,6 +3,8 @@ const letters = Array.from(document.querySelectorAll('[data-letters]'))
 const specs = Array.from(document.querySelectorAll('[data-spec]'))
 const textExample = document.querySelector('#textExample')
 
+const symbolsPerMinute = document.querySelector('#symbolsPerMinute')
+const errorPercent = document.querySelector('#errorPercent')
 
 const text = `В начале XIII в. в Центральной Азии возникло новое государство - Монгольская империя.
 Объединение монгольских племен в немалой степени было вызвано изменением климатических условий местности,
@@ -91,6 +93,13 @@ function createParty (text) {
         currentStringIndex: 0,
         currentPressedIndex: 0,
         errors: [],
+        started: false,
+        
+        statisticFlag: false,  // Активнъй ли у нас шотчике ,начали или не печатат ?
+        timerCounter: 0,   // Сумарно време каторъй потребавалос для напечтатвание текст на все строчки
+        startTimer: 0,     // Флаг что мъй начали печатат какой-то строчку / обновляется при заканчивание
+        errorCounter: 0 ,    // Сколко раз всего лиш ошиблис
+        commonCounter: 0   // Oбщое количество символа каторъй мъй напечатали 
     }
 
     party.text = party.text.replace(/\n/g, '\n ')
@@ -122,6 +131,12 @@ function createParty (text) {
 }
 
 function press (letter) {
+    party.started = true
+    if (!party.statisticFlag  ) {
+        party.statisticFlag = true
+        party.startTimer = Date.now() // Флаг когда начали печатат новую строчку
+
+    }
     const string = party.strings[party.currentStringIndex] // Конкретна текуща строчка
     const mustLetter = string[party.currentPressedIndex]  //Kaкой букву именно должно печатает
 
@@ -131,10 +146,16 @@ function press (letter) {
         if (string.length <= party.currentPressedIndex ) {
             party.currentPressedIndex = 0
             party.currentStringIndex++
+
+            party.statisticFlag = false 
+            party.timerCounter = Date.now() - party.startTimer // Pазницу временной между начало и канцо 
+                                                                // напечатавание строки
         }
     }  else if ( !party.errors.includes(mustLetter)) {
         party.errors.push(mustLetter)
+        party.errorCounter++
     }
+    party.commonCounter++
 
     viewUpdate()
 }
@@ -143,6 +164,8 @@ function press (letter) {
 function viewUpdate () {
     const string = party.strings[party.currentStringIndex] // Конкретна текуща строчка
 
+        // letterPerMinute: 0, 
+        // errorPercent: 0,
     const showedStrings = party.strings.slice(
         party.currentStringIndex,
         party.currentStringIndex + party.maxShowStrings
@@ -190,21 +213,24 @@ function viewUpdate () {
       
         // Задаем на текст-контенту ту част строки каторъй мъй уже успели напечатать
         line.append(
-            ...showedStrings[i].split('').map(letter => {
-                if (letter === " ") {
+			...showedStrings[i].split("").map((letter) => {
+				if (letter === " ") {
 					return "·";
 				}
 
 				if (letter === "\n") {
 					return "¶";
-                }
-                if (party.errors.includes(letter)) {
-                    const errorSpan = document.createElement("span");
-                    errorSpan.classList.add("hint");
-                    errorSpan.textContent = letter;
-                    return errorSpan;
-                }
-            })
+				}
+
+				if (party.errors.includes(letter)) {
+					const errorSpan = document.createElement("span");
+					errorSpan.classList.add("hint");
+					errorSpan.textContent = letter;
+					return errorSpan;
+				}
+
+				return letter;
+			})
         )  // Перевратим строки в масив символа
     }
     // Оставляем всю оставшия строчка как она есть
@@ -213,4 +239,12 @@ function viewUpdate () {
 
     // Отображаем ту част текуще строки каторъй мъй печатаем
     input.value = string.slice(0, party.currentPressedIndex )
+    if (!party.statisticFlag && party.started) {
+        symbolsPerMinute.textContent =  Math.round(
+        (60000 * party.commonCounter) / party.timerCounter 
+        )
+        errorPercent.textContent = Math.floor
+            ((10000 * party.errorCounter / party.commonCounter) / 100) + '%'
+
+    }
 }
